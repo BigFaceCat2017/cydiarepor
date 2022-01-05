@@ -4,9 +4,9 @@ import sys
 import shlex
 import optparse
 import gzip
-import StringIO
+import io
 import bz2
-import urlparse
+import urllib.parse
 
 
 def get_default_cydia_repo_array():
@@ -23,7 +23,7 @@ def get_default_cydia_repo_array():
     
     
 def handle_old_cydia_repo(url):
-    parse_result = urlparse.urlparse(url)
+    parse_result = urllib.parse.urlparse(url)
     scheme = '{uri.scheme}'.format(uri=parse_result)
     url = url[len(scheme):]
     
@@ -60,7 +60,7 @@ def is_url_reachable(url):
 def unzip_data_to_string(data, unzip_type):
     unzip_string = ""
     if unzip_type == "gz":
-        compressedstream = StringIO.StringIO(data)
+        compressedstream = io.StringIO(data)
         gziper = gzip.GzipFile(fileobj=compressedstream)
         unzip_string = gziper.read()
     elif unzip_type == "bz2":
@@ -123,7 +123,7 @@ def get_debs_from_cydiarepoURL(repoURL):
         is_need_unzip = True
         unzip_type = "gz"
     else:
-        print("[-] {} repo not found Packages or Packages.bz2 or Packages.gz file, check it!".format(repoURL))
+        print(("[-] {} repo not found Packages or Packages.bz2 or Packages.gz file, check it!".format(repoURL)))
         exit(1)
 
     r = requests.get(cydiarepo_reachable_URL)
@@ -134,7 +134,8 @@ def get_debs_from_cydiarepoURL(repoURL):
         raw_packages_string = unzip_data_to_string(raw_packages_data, unzip_type)
     else:
         raw_packages_string = raw_packages_data
-    
+
+    raw_packages_string = bytes.decode(raw_packages_string)
     raw_packages_list = raw_packages_string.split("\n\n")
     
     repo_info = {"url":repoURL}
@@ -155,7 +156,7 @@ def get_debs_from_cydiarepoURL(repoURL):
                 cur_deb[deb_item_k] = deb_item_v
             
             for k in need_item_array:
-                if not cur_deb.has_key(k):
+                if k not in cur_deb:
                     cur_deb[k] = ""
             
             cur_deb["repo"]=repo_info
@@ -180,7 +181,7 @@ def is_need_by_search_string(deb, contained_str):
     name = deb['Name']
     package = deb['Package']
     description = ''
-    if deb.has_key('Description'):
+    if 'Description' in deb:
         description = deb['Description']
     
     if contained_str in description:
@@ -203,22 +204,22 @@ def download_deb_file(repo_url, deb):
 #	wget.download(deb_download_url, save_path)
 
 def list_all_repo_deb(debs):
-    print("-"*(3+30+30+4))
+    print(("-"*(3+30+30+4)))
     title = "Developed By xia0@2019 Blog:https://4ch12dy.site"
-    print("|"+format(title,"^65")+"|")
+    print(("|"+format(title,"^65")+"|"))
     
-    print("-"*(3+30+30+4))
+    print(("-"*(3+30+30+4)))
     total_str = "Total:{}".format(len(debs))
-    print("|"+format(total_str,"^65")+"|")
-    print("-"*(3+30+30+4))
-    print("|"+format("N", "^3") + "|" + format("package", "^30")+"|"+format("name", "^30")+"|")
-    print("-"*(3+30+30+4))
+    print(("|"+format(total_str,"^65")+"|"))
+    print(("-"*(3+30+30+4)))
+    print(("|"+format("N", "^3") + "|" + format("package", "^30")+"|"+format("name", "^30")+"|"))
+    print(("-"*(3+30+30+4)))
     for i in range(len(debs)):
         if (i+1) % 40 == 0:
-            print("|"+format(i,"<3")+"|" + format(debs[i]["Package"], "^30")+ "|" + format(debs[i]["Name"]+"("+debs[i]["Version"]+")", "^30") + "|")
-            print("-"*(3+30+30+4))
-            choice = raw_input("|" + "do you want to continue?[Y/N]: ")
-            print("-"*(3+30+30+4))
+            print(("|"+format(i,"<3")+"|" + format(debs[i]["Package"], "^30")+ "|" + format(debs[i]["Name"]+"("+debs[i]["Version"]+")", "^30") + "|"))
+            print(("-"*(3+30+30+4)))
+            choice = input("|" + "do you want to continue?[Y/N]: ")
+            print(("-"*(3+30+30+4)))
             if choice == 'N' or choice == 'n':
                 break
             elif choice == 'Y' or choice == 'y':
@@ -227,21 +228,21 @@ def list_all_repo_deb(debs):
                 print("[-] error choice")
                 exit(1)
     
-        print("|"+format(i,"<3")+"|" + format(debs[i]["Package"], "^30")+ "|" + format(debs[i]["Name"], "^30") + "|")
+        print(("|"+format(i,"<3")+"|" + format(debs[i]["Package"], "^30")+ "|" + format(debs[i]["Name"], "^30") + "|"))
     
-    print("-"*(3+30+30+4))
+    print(("-"*(3+30+30+4)))
     
 def list_deb(debs):
     com_item_wid = 30
     total_wid = 1+3+ (com_item_wid +1) *3 + 1
     
-    print("-"*total_wid)
-    print("|"+format("N", "^3") + "|" + format("package", "^30")+"|"+format("name", "^30")+"|"+format("repo url", "^30")+"|")
-    print("-"*total_wid)
+    print(("-"*total_wid))
+    print(("|"+format("N", "^3") + "|" + format("package", "^30")+"|"+format("name", "^30")+"|"+format("repo url", "^30")+"|"))
+    print(("-"*total_wid))
     for i in range(len(debs)):
-        print("|"+format(i,"<3")+"|" + format(debs[i]["Package"], "^30")+ "|" + format(debs[i]["Name"]+"("+debs[i]["Version"]+")", "^30") + "|" + format(debs[i]["repo"]["url"], "^30") + "|")
+        print(("|"+format(i,"<3")+"|" + format(debs[i]["Package"], "^30")+ "|" + format(debs[i]["Name"]+"("+debs[i]["Version"]+")", "^30") + "|" + format(debs[i]["repo"]["url"], "^30") + "|"))
     
-    print("-"*total_wid)
+    print(("-"*total_wid))
     
 def generate_option_parser():
     usage = "[usage]: cydiarepor [cydiarepo_url, -d] [-s <search_string>, -l]"
@@ -273,13 +274,13 @@ if __name__ == "__main__":
     
     command_args = sys.argv[1:]
     if len(command_args) == 0:
-        print(parser.usage)
+        print((parser.usage))
         exit(1)
     
     try:
         (options, args) = parser.parse_args(command_args)
     except:
-        print(parser.usage)
+        print((parser.usage))
         exit(1)
         
     if options.defaultrepos:
@@ -293,11 +294,11 @@ if __name__ == "__main__":
                     need_debs.append(deb)
             
             list_deb(need_debs)
-            num = input(">> inout number of deb want to download:")
+            num = eval(input(">> inout number of deb want to download:"))
             
-            print("[*] you choose {} deb:\"{}\"".format(num, need_debs[num]['Name']))
+            print(("[*] you choose {} deb:\"{}\"".format(num, need_debs[num]['Name'])))
             
-            print("[*] start to download:{}".format(need_debs[num]['Name']))
+            print(("[*] start to download:{}".format(need_debs[num]['Name'])))
             cydiarepoURL = need_debs[num]["repo"]["url"]
             download_deb_file(cydiarepoURL, need_debs[num])
             
@@ -316,7 +317,7 @@ if __name__ == "__main__":
         
     if options.listdeb:
         if len(args) != 1:
-            print(parser.usage)
+            print((parser.usage))
             exit(1)
         cydiarepoURL = args[0]
         debs = get_debs_from_cydiarepoURL(cydiarepoURL)
@@ -325,7 +326,7 @@ if __name__ == "__main__":
 
     if options.searchstring:
         if len(args) != 1:
-            print(parser.usage)
+            print((parser.usage))
             exit(1)
         
         need_debs = []
@@ -337,11 +338,11 @@ if __name__ == "__main__":
                 need_debs.append(deb)
         
         list_deb(need_debs)
-        num = input(">> inout number of deb want to download:")
+        num = eval(input(">> inout number of deb want to download:"))
         
-        print("[*] you choose {} deb:\"{}\"".format(num, need_debs[num]['Name']))
+        print(("[*] you choose {} deb:\"{}\"".format(num, need_debs[num]['Name'])))
         
-        print("[*] start to download:{}".format(need_debs[num]['Name']))
+        print(("[*] start to download:{}".format(need_debs[num]['Name'])))
         
         download_deb_file(cydiarepoURL, need_debs[num])
         
